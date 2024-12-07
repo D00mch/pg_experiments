@@ -1,0 +1,36 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres_bench
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: benchdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  pgbench:
+    image: postgres:15
+    container_name: pgbench_bench
+    depends_on:
+      - postgres
+    entrypoint: >
+      bash -c "
+      export PGPASSWORD=postgres;
+      until pg_isready -h postgres -p 5432; do
+        echo 'Waiting for Postgres...';
+        sleep 1;
+      done;
+      pgbench -h postgres -U postgres -i -d benchdb;
+      pgbench -h postgres -U postgres -d benchdb -c 10 -j 10 -P 1 -T 3600 -f /scripts/benchmark.sql;
+      "
+    volumes:
+      - ./scripts:/scripts
+
+volumes:
+  pg_data:
