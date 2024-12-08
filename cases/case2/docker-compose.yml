@@ -1,8 +1,6 @@
-version: '3.9'
-
 services:
   postgres:
-    image: postgres:15
+    image: postgres_with_pg_query_state
     container_name: postgres_bench
     environment:
       POSTGRES_USER: postgres
@@ -11,11 +9,12 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - pg_data:/usr/local/pgsql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: postgres -c listen_addresses='*'
 
   pgbench:
-    image: postgres:15
+    image: postgres_with_pg_query_state
     container_name: pgbench_bench
     depends_on:
       - postgres
@@ -27,7 +26,7 @@ services:
         sleep 1;
       done;
       pgbench -h postgres -U postgres -i -d benchdb;
-      pgbench -h postgres -U postgres -d benchdb -c 10 -j 10 -P 1 -T 3600 -f /scripts/benchmark.sql;
+      pgbench -h postgres -U postgres -d benchdb -c 10 -j 10 -P 1 -T 36 -f /scripts/benchmark.sql;
       "
     volumes:
       - ./scripts:/scripts
